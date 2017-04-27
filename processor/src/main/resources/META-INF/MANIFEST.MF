@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Implementation-Version: 0.1
+Repositories: https://github.com/prestongarno/
+Application-Description: Backports java7 try-with-resources statements for compatibility
+Content-Type: Compiler plugin
+Library-Name: mvp-compiler
+Created-By: Preston Garno
