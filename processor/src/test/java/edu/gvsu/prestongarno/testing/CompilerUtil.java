@@ -20,11 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.testing.compile.Compilation;
 import com.google.testing.compile.JavaFileObjects;
 
-import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.AnnotationValue;
-import javax.lang.model.element.Element;
-import javax.lang.model.element.Modifier;
-import javax.tools.*;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.net.MalformedURLException;
@@ -42,14 +37,8 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.*;
 
 
-/**
- * *************************************************
- * Dynamic-MVP - edu.gvsu.prestongarno.sourcegentests.TestUtil - by Preston Garno on 3/10/17
- ****************************************/
 public class CompilerUtil {
 
-
-	private static final String MAGIC_NUMBER = "CAFEBABE";
 
 	private static final String TEST_CLASS_SET_DIRECTORY = "/src/test/resources/SampleSets/";
 
@@ -71,7 +60,6 @@ public class CompilerUtil {
 					return !ch[ch.length - 1].contains(".swp");
 				})
 				.map(File::toPath)
-				.map(CompilerUtil.logPath::print)
 				.map(CompilerUtil.converter::toJavaFileObject)
 				.collect(toList());
 	}
@@ -85,19 +73,6 @@ public class CompilerUtil {
 				.flatMap(CompilerUtil::flattenDir);
 	}
 
-	@FunctionalInterface
-	private interface Logger {
-
-
-		Path print(Path path);
-	}
-
-	private static final Logger logPath = path -> {
-		System.out.println("Loading class file: " + path.toString());
-		return path;
-	};
-
-	@FunctionalInterface
 	private interface PathConverter {
 		JavaFileObject toJavaFileObject(Path path);
 	}
@@ -109,18 +84,9 @@ public class CompilerUtil {
 		try {
 			return JavaFileObjects.forResource(path.toUri().toURL());
 		} catch (MalformedURLException e) {
-			throw new IllegalArgumentException("No such file");
+			throw new IllegalArgumentException("No such file or file is not a .java source file");
 		}
 	};
-
-	public static void outputDiagnostics(Compilation compilation) {
-		List<? extends Diagnostic> diagnostics = compilation.diagnostics();
-		diagnostics.forEach(d -> {
-			System.out.println("================================================");
-			System.out.println("Diagnostic: " + d.getKind().toString());
-			System.out.println(d.getMessage(Locale.ENGLISH));
-		});
-	}
 
 	/*****************************************
 	 * Creates a custom classloader with the files created by the google compilation
@@ -132,7 +98,7 @@ public class CompilerUtil {
 	 * @throws IOException
 	 * @throws NoSuchFieldException
 	 ****************************************/
-	public ClassLoader createClassLoader(com.google.testing.compile.Compilation compilation)
+	static ClassLoader createClassLoader(com.google.testing.compile.Compilation compilation)
 			throws InstantiationException,
 			IllegalAccessException,
 			ClassNotFoundException,
@@ -182,58 +148,20 @@ public class CompilerUtil {
 	}
 
 	/*****************************************
-	 * Hacky solution, reflection to access the generated files from the google compiler
+	 * Hackish solution reflection to access the generated class files from the compiler
 	 * @param compilation the compilation instance
 	 * @return a list of files from the compilation
 	 ****************************************/
 	@SuppressWarnings("unchecked")
-	private List<JavaFileObject> getFiles(Compilation compilation) throws
+	private static List<JavaFileObject> getFiles(Compilation compilation) throws
 			NoSuchFieldException,
 			IllegalAccessException {
-
 		Field f = compilation.getClass().getDeclaredField("generatedFiles");
 		f.setAccessible(true);
 		final ImmutableList<JavaFileObject> files   = (ImmutableList<JavaFileObject>) f.get(compilation);
 		List<JavaFileObject>                objects = new ArrayList<>();
 		objects.addAll(files);
 		return objects;
-	}
-
-	/*****************************************
-	 * Returns the full classname for the class in the test source set
-	 * @param shortName the simple name of the class
-	 * @return the full class name to load from a classloader
-	 ****************************************/
-	static String getFullClassName(String shortName) {
-		return "edu.gvsu.prestongarno.sourcegentests." + shortName;
-	}
-
-	public static String prettyPrintElement(Element element) {
-		List<? extends AnnotationMirror> annotationMirrors = element.getAnnotationMirrors();
-		String                           prettyMirrors     = "";
-		if (annotationMirrors.isEmpty())
-			prettyMirrors = "none";
-		else {
-			for (AnnotationMirror mirror : annotationMirrors) {
-				prettyMirrors = prettyMirrors.concat("\n\t\t\t" + mirror.getAnnotationType().toString());
-
-				//annotation values
-				for (AnnotationValue x : mirror.getElementValues().values()) {
-					prettyMirrors = prettyMirrors.concat("\n\t\t\t\t\\- " +
-																			 x.toString() + "\n\t\t\t\t\tvalue = " + x.getValue().toString());
-				}
-			}
-		}
-		Set<Modifier> modifiers        = element.getModifiers();
-		String        modifierToString = "" + modifiers.size();
-		for (Modifier mod : modifiers) {
-			modifierToString = modifierToString.concat(mod.toString() + ",");
-		}
-		return "\nElement:\t" + element.getKind().toString() + "\n\t\tName = " + element.getSimpleName()
-				+ "\n\t\tAs type: " + element.asType().toString()
-				+ "\n\t\tModifiers: " + modifiers
-				+ "\n\t\tAnnotations: " + prettyMirrors
-				+ "\n\t\tEnclosing Element = " + element.getEnclosingElement().asType();
 	}
 }
 

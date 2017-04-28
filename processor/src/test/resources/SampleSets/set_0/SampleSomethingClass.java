@@ -1,22 +1,21 @@
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import edu.gvsu.prestongarno.testing.util.OnCloseResourceException;
+import edu.gvsu.prestongarno.testing.util.TestAcloseable;
 
 public class SampleSomethingClass {
-    public void foo() {
-        System.out.println("you just got foo!");
-    }
 
-    public void testTryNoThrows() throws IOException {
-        try (FileReader r = new FileReader("test"),
-             BufferedInputStream ac = new BufferedInputStream(null))
-        {
-            System.out.println("doing dangerous stuff in the try block...");
+	public static void main(String[] args) throws Exception {
+		new SampleSomethingClass().INVOKE_ME();
+	}
 
-        } catch (UnknownError err) {
-            System.out.println("Catching some domain specific error here...");
-        }
-    }
+	public Object _ASSERT_NOT_NULL = null;
+
+	public void INVOKE_ME() throws OnCloseResourceException {
+
+		try (TestAcloseable something = new TestAcloseable(false, false))
+		{
+			_ASSERT_NOT_NULL = something;
+			something.doRiskyThings();
+		}
+	}
 
 }
