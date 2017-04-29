@@ -92,11 +92,6 @@ public class CompilerUtil {
 	 * Creates a custom classloader with the files created by the google compilation
 	 * @param compilation the compilation object that was run
 	 * @return a classloader that can be used to load and create instances of compiled source
-	 * @throws InstantiationException
-	 * @throws IllegalAccessException
-	 * @throws ClassNotFoundException
-	 * @throws IOException
-	 * @throws NoSuchFieldException
 	 ****************************************/
 	static ClassLoader createClassLoader(com.google.testing.compile.Compilation compilation)
 			throws InstantiationException,

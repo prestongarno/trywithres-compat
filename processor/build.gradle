@@ -1,5 +1,5 @@
-group 'trywithres-port'
-version '1.0-SNAPSHOT'
+group 'try-with-res-compat'
+version '0.1'
 def jdkHome = System.getenv("JAVA_HOME")
 
 apply plugin: 'idea'
@@ -18,6 +18,15 @@ dependencies {
     testCompile 'com.google.testing.compile:compile-testing:0.10'
 }
 
+jar {
+    from('build/classes/main/')
+    from('build/resources/main')
+
+    destinationDir = file('./build/jars')
+    baseName = 'try-with-res-compat-' + version
+    archiveName = baseName + '.jar'
+    println('making try-with-res-compat-.jar')
+}
 
 sourceSets {
     main {

@@ -3,6 +3,7 @@ package edu.gvsu.prestongarno.processor;
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.tree.JCTree;
 
+import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.tree.JCTree.*;
 
 import com.sun.tools.javac.tree.TreeCopier;
@@ -67,8 +68,9 @@ public class TryTreeTranslator extends TreeTranslator {
 	 *
 	 *  try {
 	 *      java.lang.RuntimeException _Scope_Runtime_Exception = new RuntimeException();
-	 *      TestAcloseable something = new TestAcloseable(false, false);
+	 *      TestAcloseable something;
 	 *      try {
+	 *      		something = new TestAcloseable(false, false);
 	 *          something.doRiskyThings();
 	 *      } catch (java.lang.Throwable _nest_catch_throwable) {
 	 *          _Scope_Runtime_Exception.initCause(_nest_catch_throwable);
@@ -100,21 +102,27 @@ public class TryTreeTranslator extends TreeTranslator {
 	 *  	 * @param jcTry the try statement to change
 	 ****************************************/
 	private void change(JCTry jcTry) {
+		this.result = null;
+
 		if(VERBOSE) {
 			System.out.println("======================>Before<======================");
 			System.out.println(jcTry);
 		}
-		result = jcTry = (JCTry) copier.copy(jcTry); //dnt know why but this is useless without it
+		//jcTry = (JCTry) copier.copy(jcTry); //dnt know why but this is useless without it
 		List<JCStatement> resList = List.nil();
-		for (JCTree vd : jcTry.resources) {
-			((JCVariableDecl) vd).mods.flags = 0;
-			resList = resList.prepend((JCStatement) vd);
+		List<JCStatement> initRes = List.nil();
+		for (JCTree vd : jcTry.resources) { //split declaration and assign
+			JCVariableDecl vard = (JCVariableDecl) vd;
+			vard.mods.flags = 0;
+			initRes = initRes.append(make.Exec(make.Assign(make.Ident(vard.name), vard.init)));
+			resList = resList.append(make.VarDef(make.Modifiers(0), vard.name, vard.vartype, make.Literal(BOT, null).setType(symtab.botType)));
 		}
 
 		jcTry.resources = List.nil(); //clear the resources from the other try statement
-		jcTry.resources.clear();
+		//jcTry.resources.clear();
 
 		JCBlock _nested_body = jcTry.body; // the body shifted one block inside a try
+		_nested_body.stats = _nested_body.stats.prependList(initRes);
 		jcTry.body = null;
 
 		// exception handling scope needed for the finally blck
@@ -137,10 +145,10 @@ public class TryTreeTranslator extends TreeTranslator {
 			JCVariableDecl     varDec            = ((JCVariableDecl) ex);
 			JCFieldAccess      access            = make.Select(make.Ident(varDec.name), names.fromString("close"));
 			JCMethodInvocation _inv_close        = make.Apply(List.nil(), access, List.nil());
-			JCBinary           _check_null       = make.Binary(Tag.NE, make.Ident(((JCVariableDecl) ex).name), make.Literal(TypeTag.BOT, null));
+			JCBinary           _check_null       = make.Binary(Tag.NE, make.Ident(((JCVariableDecl) ex).name), make.Literal(BOT, null).setType(symtab.botType));
 			JCParens           parens            = make.Parens(_check_null); // conditional
 			JCStatement        exec              = make.Exec(_inv_close);
-			JCStatement        _nullify_resource = make.Exec(make.Assign(make.Ident(varDec.name), make.Ident(names.fromString("null"))));
+			JCStatement        _nullify_resource = make.Exec(make.Assign(make.Ident(varDec.name), make.Literal(BOT, null).setType(symtab.botType)));
 			// surround each close() method with a try catch
 			Name _inner_inner_exc_close_name = names.fromString("_inner_inner_throwable_suppressed");
 			JCVariableDecl _throwable_fromclose_call = make.Param(_inner_inner_exc_close_name,
@@ -172,6 +180,8 @@ public class TryTreeTranslator extends TreeTranslator {
 		JCMethodInvocation _add_suppress_invoke = make.Apply(null, _add_suppress_exc, List.of(make.Ident(_nest_catch_throwable)));
 		_nested_catch.body.stats = _nested_catch.body.stats.prepend(make.Exec(_add_suppress_invoke));//used to assign
 
+		//making sure this works
+
 		// check if there were any suppressed exceptions from the try block or closing resources in the catch/finally block
 		JCFieldAccess _get_suppressed = make.Select(make.Ident(_exception_generic.sym), names.fromString("getSuppressed"));
 		// invoke_getSuppressed()
@@ -180,9 +190,9 @@ public class TryTreeTranslator extends TreeTranslator {
 		JCFieldAccess _array_type_length = make.Select(_inv_get_suppressed, symtab.lengthVar.name);
 		// Binary getCause != null
 		JCMethodInvocation _inv_get_cause_ = make.Apply(null, make.Select(make.Ident(_exception_generic), names.fromString("getCause")), List.nil());
-		JCBinary           _cause_not_null = make.Binary(Tag.NE, _inv_get_cause_, make.Literal(TypeTag.BOT, null));
+		JCBinary           _cause_not_null = make.Binary(Tag.NE, _inv_get_cause_, make.Literal(BOT, null).setType(symtab.botType));
 		// Binary length_of_exceptions > 0
-		JCBinary _compare_suppressed_zero = make.Binary(Tag.GT, _array_type_length, make.Literal(TypeTag.INT, "0"));
+		JCBinary _compare_suppressed_zero = make.Binary(Tag.GT, _array_type_length, make.Literal(INT, "0"));
 		// Binary OR cause exists <> has suppressed
 		JCBinary _bin_or_exceptions = make.Binary(Tag.OR, _cause_not_null, _compare_suppressed_zero);
 		// if(suppressed > 0) throw RuntimeException (wrapping the suppressed ones)
@@ -193,9 +203,18 @@ public class TryTreeTranslator extends TreeTranslator {
 		jcTry.body = make.Block(0, List.of(_exception_generic)); // construct the thing
 		jcTry.body.stats = jcTry.body.stats.appendList(resList); // add in all of the resource declarations
 		jcTry.body.stats = jcTry.body.stats.append(_shifted_try_block);
+		// fake a catch
+		if(jcTry.catchers == null || jcTry.catchers.isEmpty()) {
+			jcTry.catchers = List.nil();
+			JCCatch _fake_catch = make.Catch(make.Param(names.fromString("_something_no_one_should_ever_name_a_variable"),
+										 symtab.runtimeExceptionType, symtab.runtimeExceptionType.tsym),
+														make.Block(0, List.of(make.Throw(make.Ident(names.fromString("_something_no_one_should_ever_name_a_variable"))))));
+			jcTry.catchers = jcTry.catchers.prepend(_fake_catch);
+		}
 
-		result = jcTry; // set result
-		this.translate(jcTry); // translate again to make sure everything's updated
+		jcTry.finallyCanCompleteNormally = true;
+		System.out.println(jcTry.getTag());
+		result = jcTry;
 
 		if(VERBOSE) {
 			System.out.println("======================>After<======================");

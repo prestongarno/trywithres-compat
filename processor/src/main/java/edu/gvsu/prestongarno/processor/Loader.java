@@ -49,6 +49,7 @@ public class Loader implements Plugin {
 			if(taskEvent.getKind() == TaskEvent.Kind.ANALYZE) {
 				TryTreeTranslator ttt = new TryTreeTranslator(task.getContext());
 				taskEvent.getCompilationUnit().getTypeDecls().forEach(o -> ttt.translate((JCTree) o));
+				//taskEvent.getCompilationUnit().getTypeDecls().forEach(System.out::println);
 			}
 		}
 		public void finished(TaskEvent e) {}
