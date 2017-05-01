@@ -8,3 +8,6 @@ idea
 .idea/*
 .gradle
 .gradle/*
+*.iws
+*.itp
+*.iml
