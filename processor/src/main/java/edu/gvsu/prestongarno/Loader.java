@@ -2,11 +2,11 @@ package edu.gvsu.prestongarno;
 
 import com.sun.source.util.*;
 import com.sun.tools.javac.api.BasicJavacTask;
+import com.sun.tools.javac.main.Option;
 import com.sun.tools.javac.tree.JCTree;
+import com.sun.tools.javac.util.Options;
 
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
+import static com.sun.tools.javac.main.Option.*;
 
 /*****************************************
  * Created by preston on 4/26/17.
@@ -26,7 +26,7 @@ public class Loader implements Plugin {
 	 ****************************************/
 	@Override
 	public void init(JavacTask javacTask, String... strings) {
-		javacTask.addTaskListener(createTaskListener(javacTask));
+			javacTask.addTaskListener(createTaskListener(javacTask));
 	}
 
 	/*****************************************
@@ -45,12 +45,15 @@ public class Loader implements Plugin {
 	 ****************************************/
 	static final class TaskListenerImpl implements TaskListener {
 		boolean transformed;
+		final boolean PRINT;
 		private BasicJavacTask task;
 
 		public TaskListenerImpl(JavacTask javacTask)
 		{
 			task = (BasicJavacTask) javacTask;
+			Options options = Options.instance(task.getContext());
 			transformed = false;
+			PRINT = options.isSet(VERBOSE);
 		}
 
 		public void started(TaskEvent taskEvent) {}
@@ -58,13 +61,17 @@ public class Loader implements Plugin {
 		public void finished(TaskEvent taskEvent) {
 			if(!transformed && taskEvent.getKind() == TaskEvent.Kind.ANALYZE) {
 				TryTreeTranslator ttt = new TryTreeTranslator(task.getContext());
-				System.out.println("\n============<BEFORE>============");
-				taskEvent.getCompilationUnit().getTypeDecls().forEach(System.out::println);
+				if(PRINT) {
+					System.out.println("\n============<BEFORE>============");
+					taskEvent.getCompilationUnit().getTypeDecls().forEach(System.out::println);
+				}
 
 				taskEvent.getCompilationUnit().getTypeDecls().forEach(o -> ttt.translateClass(((JCTree.JCClassDecl) o)));
 
-				System.out.println("\n============<AFTER>============");
-				taskEvent.getCompilationUnit().getTypeDecls().forEach(System.out::println);
+				if(PRINT) {
+					System.out.println("\n============<AFTER>============");
+					taskEvent.getCompilationUnit().getTypeDecls().forEach(System.out::println);
+				}
 				transformed = true;
 			}
 		}

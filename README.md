@@ -6,15 +6,29 @@ Try-With-Resources Compatibility: Java & Android API <19 (KitKat)
 
 
 ## How to use with gradle:
-trywithresources-compat will only work with source version 1.8. This is also a *compileOnly* dependency. In your build.gradle file add this to your dependencies closure\*:
+trywithresources-compat will only work with source version 1.8. This is also a *compileOnly* dependency. In your module build.gradle file add this* to your dependencies closure (or alternatively you can put this on the compile classpath in the root script)\:
 
     dependencies {
       compileOnly ':trywithresources-compat:0.1'
     }
 
-\* <sub>Currently waiting on JIRA approval to deploy an artifact to Maven Central. This means the only way to use this is to add the direct repository URL (on jcenter/Bintray) at https://dl.bintray.com/prestongarno/trywithresources-compat/ (.jar and sha1) to repositories closure</sub>
+\* <sub>Currently waiting on JIRA approval to deploy an artifact to Maven Central. This means the only way to use this is to add the direct repository URL (on jcenter/Bintray) at https://dl.bintray.com/prestongarno/trywithresources-compat/ (.jar and sha1) to repositories closure. Or, `git clone` the repo, `cd` into root, and run `gradle build`</sub>
      
-## How it works:
+#### Options:
+ 1. **Pretty-print**: compile with the `-verbose` argument to print before/after processing
+     
+     
+#### Possible Issues:
+   * Hotswap/InstantRun on emulators running Android \<19 won't work *after adding a try-with-resource and instant run before a clean build*. A clean build will most likely be required if testing on \<API 19 and you add a try-with-resource statement. Release APK won't be affected.
+     
+     
+===== 
+
+     
+===== 
+     
+     
+###### **How it works:**
 
 * trywithresources-compat leverages the Java [`ServiceLoader`](https://docs.oracle.com/javase/8/docs/api/java/util/ServiceLoader.html) to attach itself to the javac compilation process and use the (admittedly, half internal/unsupported) API com.sun.tools.javac 
 * After annotation processing, it runs a single pass over the Abstract Syntax Tree and translates any try-with-resources blocks to standard try-catch blocks
@@ -47,5 +61,3 @@ trywithresources-compat will only work with source version 1.8. This is also a *
     } // if applicable: catch/finally blocks are inserted here
     
 
-## Possible Issues:
-   * Hotswap/InstantRun on emulators running Android \<19 won't work *only if you add a TWR and instant run before a clean build*. A clean build will most likely be required if testing on \<API 19 and you add a try-with-resource statement. Release APK won't be affected.
