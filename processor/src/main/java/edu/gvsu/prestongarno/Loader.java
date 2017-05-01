@@ -4,6 +4,10 @@ import com.sun.source.util.*;
 import com.sun.tools.javac.api.BasicJavacTask;
 import com.sun.tools.javac.tree.JCTree;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+
 /*****************************************
  * Created by preston on 4/26/17.
  *
@@ -40,7 +44,6 @@ public class Loader implements Plugin {
 	 * processing rounds are over to scan the AST
 	 ****************************************/
 	static final class TaskListenerImpl implements TaskListener {
-
 		boolean transformed;
 		private BasicJavacTask task;
 
@@ -55,13 +58,13 @@ public class Loader implements Plugin {
 		public void finished(TaskEvent taskEvent) {
 			if(!transformed && taskEvent.getKind() == TaskEvent.Kind.ANALYZE) {
 				TryTreeTranslator ttt = new TryTreeTranslator(task.getContext());
-				//System.out.println("\n============<BEFORE>============");
-				//taskEvent.getCompilationUnit().getTypeDecls().forEach(System.out::println);
+				System.out.println("\n============<BEFORE>============");
+				taskEvent.getCompilationUnit().getTypeDecls().forEach(System.out::println);
 
 				taskEvent.getCompilationUnit().getTypeDecls().forEach(o -> ttt.translateClass(((JCTree.JCClassDecl) o)));
 
-				//System.out.println("\n============<AFTER>============");
-				//taskEvent.getCompilationUnit().getTypeDecls().forEach(System.out::println);
+				System.out.println("\n============<AFTER>============");
+				taskEvent.getCompilationUnit().getTypeDecls().forEach(System.out::println);
 				transformed = true;
 			}
 		}

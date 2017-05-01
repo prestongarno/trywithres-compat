@@ -1,14 +1,20 @@
-group 'trywithresources-compat'
-version '0.1'
 def jdkHome = System.getenv("JAVA_HOME")
+def BINTRAY_KEY = System.getenv('BINTRAY_KEY')
 
+
+apply plugin: "com.jfrog.bintray"
 apply plugin: 'idea'
 apply plugin: 'java'
+apply plugin: 'maven-publish'
 
-sourceCompatibility = 1.8
+group 'com.github.prestongarno'
+version '0.1'
 
 repositories {
-    mavenCentral()
+    jcenter()
+    maven {
+        url  "http://dl.bintray.com/prestongarno/trywithresources-compat"
+    }
 }
 
 dependencies {
@@ -17,12 +23,33 @@ dependencies {
     testCompileClasspath files("$jdkHome/lib/tools.jar")
     testCompile 'com.google.testing.compile:compile-testing:0.10'
 }
+bintray {
+    user = 'prestongarno'
+    key = BINTRAY_KEY
+    publish = ['Publication']
+    pkg {
+        version {
+            name = '0.1'
+            released = new Date()
+            gpg {
+                sign = true
+                passphrase = System.getProperty("GNUPGPASS")
+            }
+        }
+        repo = 'maven'
+        publish = true
+        name = 'trywithresources-compat'
+        licenses = ['GNU-GPLv3']
+        vcsUrl = 'https://github.com/prestongarno/trywithresources-compat.git'
+    }
+}
+
 
 jar {
     from('build/classes/main/')
     from('build/resources/main')
 
-    destinationDir = file('./build/jars')
+    destinationDir = file('./build/artifacts')
     baseName = 'trywithresources-compat-' + version
     archiveName = baseName + '.jar'
 }
@@ -38,6 +65,17 @@ sourceSets {
         }
         resources {
             srcDirs = ['./src/test/resources']
+        }
+    }
+}
+
+publishing {
+    publications {
+        Publication(MavenPublication) {
+            artifact jar
+            groupId group
+            artifactId 'trywithresources-compat'
+            version '0.1'
         }
     }
 }

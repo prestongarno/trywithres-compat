@@ -9,11 +9,14 @@ public class SampleSomethingClass {
 
 	public Object _ASSERT_NOT_NULL = null;
 
-	public void INVOKE_ME() throws OnCloseResourceException {
-		try (TestAcloseable something = new TestAcloseable(false, false))
-		{
+	public void INVOKE_ME() {
+		try (TestAcloseable something = new TestAcloseable(false, false)) {
 			_ASSERT_NOT_NULL = something;
 			something.doRiskyThings();
+		} catch (OnCloseResourceException on) {
+			System.out.println("closable failed...");
+		} finally {
+			System.out.println("user's finally block is running..");
 		}
 	}
 
