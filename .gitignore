@@ -9,5 +9,5 @@ idea
 .gradle
 .gradle/*
 *.iws
-*.itp
+*.iws
 *.iml

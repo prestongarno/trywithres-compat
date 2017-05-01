@@ -1,6 +1,6 @@
-#Try-With-Resources Compatibility: Java & Android API <19 (KitKat)
-
-###Standalone dependency to support migrating Android apps from [retrolambda](https://github.com/orfjackal/retrolambda) to Android Studio 2.4, which now comes with support for [some Java 8 features out of the box]().  While google is rumored to be providing support for try-with-resources ['hopefully sometime soon'](https://www.reddit.com/r/androiddev/comments/65f2rb/java_8_language_features_support_update/dgaqpak/), I decided to go ahead and build a standalone tool to do this until 2.4 provides a fix.  
+Try-With-Resources Compatibility: Java & Android API <19 (KitKat)
+======
+####Standalone dependency to support migrating Android apps from [retrolambda](https://github.com/orfjackal/retrolambda) to Android Studio 2.4, which now comes with support for [some Java 8 features out of the box]().  While google is rumored to be providing support for try-with-resources ['hopefully sometime soon'](https://www.reddit.com/r/androiddev/comments/65f2rb/java_8_language_features_support_update/dgaqpak/), I decided to go ahead and build a standalone tool to do this until 2.4 provides a fix.  
 
 ##How to use with gradle:
 
@@ -42,7 +42,7 @@ The code generation process uses synthetic local variables in order to avoid nam
               primaryException0$.addSuppressed(x2$);
           } else something.close();
       }
-   }
+    }
 
 ###Possible Issues:
    * Hotswap/InstantRun on emulators running Android \<19 won't work *only if you add a TWR and instant run before a clean build*. A clean build will most likely be required if testing on \<API 19 and you add a try-with-resource statement. Release APK won't be affected.
