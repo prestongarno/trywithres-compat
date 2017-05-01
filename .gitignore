@@ -3,3 +3,6 @@ build
 lib
 *.iml
 .idea/.
+.idea
+idea
+.idea/*
