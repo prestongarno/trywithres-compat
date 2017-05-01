@@ -1,4 +1,4 @@
-package edu.gvsu.prestongarno.processor;
+package edu.gvsu.prestongarno;
 
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Type;
@@ -8,7 +8,6 @@ import com.sun.tools.javac.comp.Resolve;
 import com.sun.tools.javac.jvm.Target;
 import com.sun.tools.javac.tree.*;
 
-import static com.sun.tools.javac.code.Flags.COMPOUND;
 import static com.sun.tools.javac.code.Flags.FINAL;
 import static com.sun.tools.javac.code.Flags.SYNTHETIC;
 import static com.sun.tools.javac.code.Symbol.*;
@@ -20,7 +19,6 @@ import static com.sun.tools.javac.util.JCDiagnostic.*;
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.util.List;
 
-import javax.lang.model.type.TypeKind;
 import java.util.*;
 
 /****************************************

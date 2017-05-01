@@ -1,5 +1,5 @@
-group 'trywithres-port'
-version '1.0-SNAPSHOT'
+group 'trywithresources-compat'
+version '0.1-SNAPSHOT'
 
 apply plugin: 'java'
 

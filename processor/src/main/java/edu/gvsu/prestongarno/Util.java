@@ -1,4 +1,4 @@
-package edu.gvsu.prestongarno.processor;
+package edu.gvsu.prestongarno;
 
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.comp.*;

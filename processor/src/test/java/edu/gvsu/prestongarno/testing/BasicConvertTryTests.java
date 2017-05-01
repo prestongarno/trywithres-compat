@@ -1,7 +1,7 @@
 package edu.gvsu.prestongarno.testing;
 
 import com.google.testing.compile.Compilation;
-import edu.gvsu.prestongarno.processor.FakeProcessor;
+import edu.gvsu.prestongarno.FakeProcessor;
 import edu.gvsu.prestongarno.testing.util.OnCloseResourceException;
 import edu.gvsu.prestongarno.testing.util.TestAcloseable;
 import edu.gvsu.prestongarno.testing.util.TestRuntimeException;
@@ -19,6 +19,7 @@ import static junit.framework.TestCase.assertTrue;
 /****************************************
  * Created by preston on 4/26/17.
  ****************************************/
+@SuppressWarnings("unchecked")
 public class BasicConvertTryTests {
 	@Test
 	public void mTestServiceLoader() throws Exception {

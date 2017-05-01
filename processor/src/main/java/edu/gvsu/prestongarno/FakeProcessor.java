@@ -1,16 +1,6 @@
-package edu.gvsu.prestongarno.processor;
+package edu.gvsu.prestongarno;
 
 import com.sun.source.util.JavacTask;
-import com.sun.source.util.Trees;
-import com.sun.tools.javac.api.BasicJavacTask;
-import com.sun.tools.javac.code.Symtab;
-import com.sun.tools.javac.model.JavacTypes;
-import com.sun.tools.javac.tree.JCTree;
-import com.sun.tools.javac.tree.TreeMaker;
-import com.sun.tools.javac.tree.TreeTranslator;
-import com.sun.tools.javac.util.List;
-import com.sun.tools.javac.util.Name;
-import com.sun.tools.javac.util.Names;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;

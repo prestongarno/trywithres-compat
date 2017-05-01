@@ -1,4 +1,4 @@
-group 'try-with-res-compat'
+group 'trywithresources-compat'
 version '0.1'
 def jdkHome = System.getenv("JAVA_HOME")
 
@@ -23,9 +23,8 @@ jar {
     from('build/resources/main')
 
     destinationDir = file('./build/jars')
-    baseName = 'try-with-res-compat-' + version
+    baseName = 'trywithresources-compat-' + version
     archiveName = baseName + '.jar'
-    println('making try-with-res-compat-.jar')
 }
 
 sourceSets {

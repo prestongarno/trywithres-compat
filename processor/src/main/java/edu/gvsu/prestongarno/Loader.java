@@ -1,16 +1,8 @@
-package edu.gvsu.prestongarno.processor;
+package edu.gvsu.prestongarno;
 
 import com.sun.source.util.*;
 import com.sun.tools.javac.api.BasicJavacTask;
-import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.tree.JCTree;
-import com.sun.tools.javac.tree.TreeMaker;
-import com.sun.tools.javac.tree.TreeTranslator;
-import com.sun.tools.javac.util.List;
-import com.sun.tools.javac.util.Name;
-import com.sun.tools.javac.util.Names;
-
-import java.util.Map;
 
 /*****************************************
  * Created by preston on 4/26/17.
@@ -21,7 +13,7 @@ public class Loader implements Plugin {
 
 	@Override
 	public String getName() {
-		return "Try-With-Resources<<";
+		return "TryWithRes-<<Port";
 	}
 
 	/*****************************************
