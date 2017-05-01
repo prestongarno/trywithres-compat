@@ -2,7 +2,15 @@ package edu.gvsu.prestongarno.processor;
 
 import com.sun.source.util.*;
 import com.sun.tools.javac.api.BasicJavacTask;
+import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.tree.JCTree;
+import com.sun.tools.javac.tree.TreeMaker;
+import com.sun.tools.javac.tree.TreeTranslator;
+import com.sun.tools.javac.util.List;
+import com.sun.tools.javac.util.Name;
+import com.sun.tools.javac.util.Names;
+
+import java.util.Map;
 
 /*****************************************
  * Created by preston on 4/26/17.
@@ -41,17 +49,29 @@ public class Loader implements Plugin {
 	 ****************************************/
 	static final class TaskListenerImpl implements TaskListener {
 
+		boolean transformed;
 		private BasicJavacTask task;
 
-		public TaskListenerImpl(JavacTask javacTask) { task = (BasicJavacTask) javacTask; }
+		public TaskListenerImpl(JavacTask javacTask)
+		{
+			task = (BasicJavacTask) javacTask;
+			transformed = false;
+		}
 
-		public void started(TaskEvent taskEvent) {
-			if(taskEvent.getKind() == TaskEvent.Kind.ANALYZE) {
+		public void started(TaskEvent taskEvent) {}
+
+		public void finished(TaskEvent taskEvent) {
+			if(!transformed && taskEvent.getKind() == TaskEvent.Kind.ANALYZE) {
 				TryTreeTranslator ttt = new TryTreeTranslator(task.getContext());
-				taskEvent.getCompilationUnit().getTypeDecls().forEach(o -> ttt.translate((JCTree) o));
+				//System.out.println("\n============<BEFORE>============");
 				//taskEvent.getCompilationUnit().getTypeDecls().forEach(System.out::println);
+
+				taskEvent.getCompilationUnit().getTypeDecls().forEach(o -> ttt.translateClass(((JCTree.JCClassDecl) o)));
+
+				//System.out.println("\n============<AFTER>============");
+				//taskEvent.getCompilationUnit().getTypeDecls().forEach(System.out::println);
+				transformed = true;
 			}
 		}
-		public void finished(TaskEvent e) {}
 	}
 }

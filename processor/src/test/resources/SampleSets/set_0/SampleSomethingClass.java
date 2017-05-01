@@ -10,7 +10,6 @@ public class SampleSomethingClass {
 	public Object _ASSERT_NOT_NULL = null;
 
 	public void INVOKE_ME() throws OnCloseResourceException {
-
 		try (TestAcloseable something = new TestAcloseable(false, false))
 		{
 			_ASSERT_NOT_NULL = something;

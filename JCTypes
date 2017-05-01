@@ -1,0 +1,92 @@
+---------------------------------------------
+Direct/Unique JCTrees
+---------------------------------------------
+JCCatch                 extends  JCTree
+JCCompilationUnit       extends  JCTree
+JCExpression            extends  JCTree
+JCImport                extends  JCTree
+JCMethodDecl            extends  JCTree
+JCModifiers             extends  JCTree
+JCStatement             extends  JCTree
+JCTypeParameter         extends  JCTree
+TypeBoundKind           extends  JCTree
+JCExpression            extends  JCTree
+
+---------------------------------------------
+Java Expression Structures
+---------------------------------------------
+JCAnnotatedType         extends  JCExpression
+JCAnnotatedType         extends  JCExpression
+JCAnnotation            extends  JCExpression
+JCAnnotation            extends  JCExpression
+JCArrayAccess           extends  JCExpression
+JCArrayAccess           extends  JCExpression
+JCArrayTypeTree         extends  JCExpression
+JCArrayTypeTree         extends  JCExpression
+JCAssignOp              extends  JCExpression
+JCAssignOp              extends  JCExpression
+JCAssign                extends  JCExpression
+JCAssign                extends  JCExpression
+JCBinary                extends  JCExpression
+JCBinary                extends  JCExpression
+JCErroneous             extends  JCExpression
+JCErroneous             extends  JCExpression
+JCFieldAccess           extends  JCExpression
+JCFieldAccess           extends  JCExpression
+JCIdent                 extends  JCExpression
+JCIdent                 extends  JCExpression
+JCInstanceOf            extends  JCExpression
+JCInstanceOf            extends  JCExpression
+JCLiteral               extends  JCExpression
+JCLiteral               extends  JCExpression
+JCNewArray              extends  JCExpression
+JCNewArray              extends  JCExpression
+JCParens                extends  JCExpression
+JCParens                extends  JCExpression
+JCPolyExpression        extends  JCExpression
+JCPolyExpression        extends  JCExpression
+JCPrimitiveTypeTree     extends  JCExpression
+JCPrimitiveTypeTree     extends  JCExpression
+JCTypeApply             extends  JCExpression
+JCTypeApply             extends  JCExpression
+JCTypeCast              extends  JCExpression
+JCTypeCast              extends  JCExpression
+JCTypeIntersection      extends  JCExpression
+JCTypeIntersection      extends  JCExpression
+JCTypeUnion             extends  JCExpression
+JCTypeUnion             extends  JCExpression
+JCUnary                 extends  JCExpression
+JCUnary                 extends  JCExpression
+JCWildcard              extends  JCExpression
+JCWildcard              extends  JCExpression
+JCFunctionalExpression  extends  JCPolyExpression
+JCMethodInvocation      extends  JCPolyExpression
+JCConditional           extends  JCPolyExpression
+JCNewClass              extends  JCPolyExpression
+JCLambda                extends  JCFunctionalExpression
+JCMemberReference       extends  JCFunctionalExpression
+
+---------------------------------------------
+Java language statements
+---------------------------------------------
+JCAssert                extends  JCStatement
+JCBlock                 extends  JCStatement
+JCBreak                 extends  JCStatement
+JCCase                  extends  JCStatement
+JCClassDecl             extends  JCStatement
+JCContinue              extends  JCStatement
+JCDoWhileLoop           extends  JCStatement
+JCEnhancedForLoop       extends  JCStatement
+JCExpressionStatement   extends  JCStatement
+JCExpressionStatement   extends  JCStatement
+JCForLoop               extends  JCStatement
+JCIf                    extends  JCStatement
+JCLabeledStatement      extends  JCStatement
+JCReturn                extends  JCStatement
+JCSkip                  extends  JCStatement
+JCSwitch                extends  JCStatement
+JCSynchronized          extends  JCStatement
+JCThrow                 extends  JCStatement
+JCTry                   extends  JCStatement
+JCVariableDecl          extends  JCStatement
+JCWhileLoop             extends  JCStatement

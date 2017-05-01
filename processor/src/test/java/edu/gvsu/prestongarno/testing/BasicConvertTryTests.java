@@ -14,7 +14,6 @@ import java.lang.reflect.Method;
 import static com.google.testing.compile.CompilationSubject.assertThat;
 import static com.google.testing.compile.Compiler.javac;
 import static edu.gvsu.prestongarno.testing.CompilerUtil.*;
-import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertTrue;
 
 /****************************************
@@ -25,7 +24,7 @@ public class BasicConvertTryTests {
 	public void mTestServiceLoader() throws Exception {
 		Compilation compilation = javac()
 				.withProcessors(new FakeProcessor())
-				.compile(loadClassSet(0));
+				.compile(loadClassSet(4));
 		assertThat(compilation).succeededWithoutWarnings();
 	}
 
@@ -37,7 +36,7 @@ public class BasicConvertTryTests {
 		compilation.diagnostics().forEach(System.out::println);
 		assertThat(compilation).succeededWithoutWarnings();
 
-		// test the resource being closed reflectively call method
+		// test the resource being closed & call method
 		Field _resource;
 		Method _modified_method;
 
@@ -122,6 +121,5 @@ public class BasicConvertTryTests {
 			assertTrue(((TestAcloseable) _resource.get(inst)).isClosed());
 			assertTrue(((TestAcloseable) _resource_2.get(inst)).isClosed());
 		}
-
 	}
 }

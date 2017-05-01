@@ -1,226 +1,332 @@
 package edu.gvsu.prestongarno.processor;
 
 import com.sun.tools.javac.code.*;
-import com.sun.tools.javac.tree.JCTree;
+import com.sun.tools.javac.code.Type;
+import com.sun.tools.javac.comp.AttrContext;
+import com.sun.tools.javac.comp.Env;
+import com.sun.tools.javac.comp.Resolve;
+import com.sun.tools.javac.jvm.Target;
+import com.sun.tools.javac.tree.*;
 
+import static com.sun.tools.javac.code.Flags.COMPOUND;
+import static com.sun.tools.javac.code.Flags.FINAL;
+import static com.sun.tools.javac.code.Flags.SYNTHETIC;
+import static com.sun.tools.javac.code.Symbol.*;
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.tree.JCTree.*;
+import static com.sun.tools.javac.tree.JCTree.Tag.NE;
+import static com.sun.tools.javac.util.JCDiagnostic.*;
 
-import com.sun.tools.javac.tree.TreeCopier;
-import com.sun.tools.javac.tree.TreeMaker;
-import com.sun.tools.javac.tree.TreeTranslator;
-import com.sun.tools.javac.util.Context;
+import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.util.List;
-import com.sun.tools.javac.util.Name;
-import com.sun.tools.javac.util.Names;
 
-/**
- * Created by preston on 4/26/17.
+import javax.lang.model.type.TypeKind;
+import java.util.*;
+
+/****************************************
+ * @author Preston Garno
  ****************************************/
 public class TryTreeTranslator extends TreeTranslator {
 
-	/**true=print the before->after contents of the AST for each try-with-res
-	 */
-	private final boolean VERBOSE = true;
+	private final Context                           context;
+	private final Map<TypeSymbol, Env<AttrContext>> envs;
+	private       TreeMaker                         make;
+	private final Symtab                            symtab;
+	private final Types                             types;
+	private final Names                             names;
+	private final Resolve                           rs;
+	private final Target                            target;
+	private       Env<AttrContext>                  attrEnv;
+	private       DiagnosticPosition                make_pos;
+	private       EndPosTable                       endPosTable;
 
-	private final Context    context;
-	private final TreeMaker  make;
-	private final TreeCopier copier;
-	private final Symtab symtab;
-	private final Names names;
+	/*****************************************
+	 * A scope containing all unnamed resource variables/saved
+	 * exception variables for translated TWR blocks
+	 ****************************************/
+	private Scope twrVars;
 
-	private final Type _runt_exception_type;
-	private final Type _throwable_exception_type;
+	/*****************************************
+	 * The current method symbol.
+	 ****************************************/
+	private MethodSymbol currentMethodSym;
 
 	TryTreeTranslator(Context context) {
 		this.context = context;
 		// util
 		make = TreeMaker.instance(context);
-		copier = new TreeCopier(make);
 		symtab = Symtab.instance(context);
 		names = Names.instance(context);
-
-		// useful constant types/sym
-		_runt_exception_type = symtab.runtimeExceptionType;
-		_throwable_exception_type = symtab.throwableType;
+		rs = Resolve.instance(context);
+		target = Target.instance(context);
+		types = Types.instance(context);
+		twrVars = new Scope(symtab.noSymbol);
+		this.envs = Util.getEnvs(context);
 	}
 
-	@Override
-	public void visitTry(JCTree.JCTry jcTry) {
-		//if it has resources translate
-		if (jcTry.resources.nonEmpty()) {
-			this.change(jcTry);
-		}
-		super.visitTry(jcTry);
+	public void translateClass(JCClassDecl o) {
+		this.attrEnv = envs.get(o.sym);
+		endPosTable = attrEnv == null ? endPosTable
+												: attrEnv.toplevel.endPositions;
+		this.translate(o);
 	}
 
 	/*****************************************
-	 * Translate the try-with-resources statement to something compatible
-	 * This is the translation when running set_0
-	 *
-	 *  ======================>Before<======================
-	 *
-	 *  try (final TestAcloseable something = new TestAcloseable(false, false);) {
-	 *      something.doRiskyThings();
-	 *  }
-	 *
-	 *  ======================>After<======================
-	 *
-	 *  try {
-	 *      java.lang.RuntimeException _Scope_Runtime_Exception = new RuntimeException();
-	 *      TestAcloseable something;
-	 *      try {
-	 *      		something = new TestAcloseable(false, false);
-	 *          something.doRiskyThings();
-	 *      } catch (java.lang.Throwable _nest_catch_throwable) {
-	 *          _Scope_Runtime_Exception.initCause(_nest_catch_throwable);
-	 *          if (something != null) {
-	 *              try {
-	 *                  something.close();
-	 *                  something = null;
-	 *              } catch (java.lang.Throwable _inner_inner_throwable_suppressed) {
-	 *                  _Scope_Runtime_Exception.addSuppressed(_inner_inner_throwable_suppressed);
-	 *              }
-	 *          }
-	 *      } finally {
-	 *          if (something != null) {
-	 *              try {
-	 *                  something.close();
-	 *                  something = null;
-	 *              } catch (java.lang.Throwable _inner_inner_throwable_suppressed) {
-	 *                  _Scope_Runtime_Exception.addSuppressed(_inner_inner_throwable_suppressed);
-	 *              }
-	 *          }
-	 *          if (_Scope_Runtime_Exception.getCause() != null || _Scope_Runtime_Exception.getSuppressed().length > 0) {
-	 *              throw _Scope_Runtime_Exception;
-	 *          }
-	 *      }
-	 *  }
-	 *
-	 *  ======================>======<======================
-	 *
-	 *  	 * @param jcTry the try statement to change
+	 * Visitor method: Translate a single node.
+	 * Attach the source position from the old tree to its replacement tree.
 	 ****************************************/
-	private void change(JCTry jcTry) {
-		this.result = null;
-
-		if(VERBOSE) {
-			System.out.println("======================>Before<======================");
-			System.out.println(jcTry);
-		}
-		//jcTry = (JCTry) copier.copy(jcTry); //dnt know why but this is useless without it
-		List<JCStatement> resList = List.nil();
-		List<JCStatement> initRes = List.nil();
-		for (JCTree vd : jcTry.resources) { //split declaration and assign
-			JCVariableDecl vard = (JCVariableDecl) vd;
-			vard.mods.flags = 0;
-			initRes = initRes.append(make.Exec(make.Assign(make.Ident(vard.name), vard.init)));
-			resList = resList.append(make.VarDef(make.Modifiers(0), vard.name, vard.vartype, make.Literal(BOT, null).setType(symtab.botType)));
-		}
-
-		jcTry.resources = List.nil(); //clear the resources from the other try statement
-		//jcTry.resources.clear();
-
-		JCBlock _nested_body = jcTry.body; // the body shifted one block inside a try
-		_nested_body.stats = _nested_body.stats.prependList(initRes);
-		jcTry.body = null;
-
-		// exception handling scope needed for the finally blck
-		Name _name_exception_runtime = names.fromString("_Scope_Runtime_Exception");
-		JCVariableDecl _exception_generic = // varsymbol defs: flag, names, type, symbol
-				make.VarDef(new Symbol.VarSymbol(0, _name_exception_runtime, this._runt_exception_type, _runt_exception_type.tsym),
-								make.NewClass(null, List.nil(), make.Ident(_runt_exception_type.tsym), List.nil(), null));
-
-		// the inner catch block construction
-		Name _nest_catch_throwable = names.fromString("_nest_catch_throwable");
-		// Catch any exception
-		JCVariableDecl param = make.Param(_nest_catch_throwable, _throwable_exception_type, _throwable_exception_type.tsym);
-
-		// closing all of the resourcces with a null check
-		List<JCStatement> _close_invokations = List.nil();
-
-		// the method invokations to close resources.  Wraps each close() call in a null check,
-		// a try/catch, and suppresses any exceptions that are thrown before moving to the next and throwing
-		for (JCStatement ex : resList) {
-			JCVariableDecl     varDec            = ((JCVariableDecl) ex);
-			JCFieldAccess      access            = make.Select(make.Ident(varDec.name), names.fromString("close"));
-			JCMethodInvocation _inv_close        = make.Apply(List.nil(), access, List.nil());
-			JCBinary           _check_null       = make.Binary(Tag.NE, make.Ident(((JCVariableDecl) ex).name), make.Literal(BOT, null).setType(symtab.botType));
-			JCParens           parens            = make.Parens(_check_null); // conditional
-			JCStatement        exec              = make.Exec(_inv_close);
-			JCStatement        _nullify_resource = make.Exec(make.Assign(make.Ident(varDec.name), make.Literal(BOT, null).setType(symtab.botType)));
-			// surround each close() method with a try catch
-			Name _inner_inner_exc_close_name = names.fromString("_inner_inner_throwable_suppressed");
-			JCVariableDecl _throwable_fromclose_call = make.Param(_inner_inner_exc_close_name,
-																					_throwable_exception_type,
-																					_throwable_exception_type.tsym);
-			JCFieldAccess      _put_suppressed_close_exc = make.Select(make.Ident(_exception_generic.sym), names.fromString("addSuppressed"));
-			JCMethodInvocation _add_suppress_invoke      = make.Apply(null, _put_suppressed_close_exc, List.of(make.Ident(_inner_inner_exc_close_name)));
-			JCCatch            _catch_exc_on_close       = make.Catch(_throwable_fromclose_call, make.Block(0, List.of(make.Exec(_add_suppress_invoke))));
-
-			JCTry             _try_inner_close = make.Try(List.nil(), make.Block(0, List.of(exec, _nullify_resource)), List.of(_catch_exc_on_close), null);
-			List<JCStatement> stats            = List.of(_try_inner_close);
-			JCIf              _not_null_check  = make.If(parens, make.Block(0, stats), null);
-			_close_invokations = _close_invokations.append(_not_null_check);
-		}
-
-		// make a generalized catch statement that closes all, suppresses exceptions and throws runtime exceptions
-		JCCatch _nested_catch = make.Catch(param, make.Block(0, List.nil()));
-		_nested_catch.body.stats = _nested_catch.body.stats.prependList(_close_invokations);
-
-		// make a finally block doing the same thins
-		//_nested_catch.body.stats.
-		JCBlock _nested_fin_block = make.Block(0, _close_invokations);
-
-		// make the try block; Params are: 	List<JCTree> resources, JCBlock body, List<JCCatch> catchers, JCBlock finalizer)
-		JCTry _shifted_try_block = make.Try(List.nil(), _nested_body, List.of(_nested_catch), _nested_fin_block);
-
-		// +3 down: first set the cause of the exception as the initial one in the user's code that caused the exception
-		JCFieldAccess      _add_suppress_exc    = make.Select(make.Ident(_name_exception_runtime), names.fromString("initCause"));
-		JCMethodInvocation _add_suppress_invoke = make.Apply(null, _add_suppress_exc, List.of(make.Ident(_nest_catch_throwable)));
-		_nested_catch.body.stats = _nested_catch.body.stats.prepend(make.Exec(_add_suppress_invoke));//used to assign
-
-		//making sure this works
-
-		// check if there were any suppressed exceptions from the try block or closing resources in the catch/finally block
-		JCFieldAccess _get_suppressed = make.Select(make.Ident(_exception_generic.sym), names.fromString("getSuppressed"));
-		// invoke_getSuppressed()
-		JCMethodInvocation _inv_get_suppressed = make.Apply(null, _get_suppressed, List.nil());
-		// invoke_getSuppressed().length
-		JCFieldAccess _array_type_length = make.Select(_inv_get_suppressed, symtab.lengthVar.name);
-		// Binary getCause != null
-		JCMethodInvocation _inv_get_cause_ = make.Apply(null, make.Select(make.Ident(_exception_generic), names.fromString("getCause")), List.nil());
-		JCBinary           _cause_not_null = make.Binary(Tag.NE, _inv_get_cause_, make.Literal(BOT, null).setType(symtab.botType));
-		// Binary length_of_exceptions > 0
-		JCBinary _compare_suppressed_zero = make.Binary(Tag.GT, _array_type_length, make.Literal(INT, "0"));
-		// Binary OR cause exists <> has suppressed
-		JCBinary _bin_or_exceptions = make.Binary(Tag.OR, _cause_not_null, _compare_suppressed_zero);
-		// if(suppressed > 0) throw RuntimeException (wrapping the suppressed ones)
-		JCIf _if_suppressed_exists = make.If(make.Parens(_bin_or_exceptions), make.Block(0, List.of(make.Throw(make.Ident(_exception_generic.sym)))), null);
-		// append this to the nested finally block
-		_nested_fin_block.stats = _nested_fin_block.stats.append(_if_suppressed_exists);
-
-		jcTry.body = make.Block(0, List.of(_exception_generic)); // construct the thing
-		jcTry.body.stats = jcTry.body.stats.appendList(resList); // add in all of the resource declarations
-		jcTry.body.stats = jcTry.body.stats.append(_shifted_try_block);
-		// fake a catch
-		if(jcTry.catchers == null || jcTry.catchers.isEmpty()) {
-			jcTry.catchers = List.nil();
-			JCCatch _fake_catch = make.Catch(make.Param(names.fromString("_something_no_one_should_ever_name_a_variable"),
-										 symtab.runtimeExceptionType, symtab.runtimeExceptionType.tsym),
-														make.Block(0, List.of(make.Throw(make.Ident(names.fromString("_something_no_one_should_ever_name_a_variable"))))));
-			jcTry.catchers = jcTry.catchers.prepend(_fake_catch);
-		}
-
-		jcTry.finallyCanCompleteNormally = true;
-		System.out.println(jcTry.getTag());
-		result = jcTry;
-
-		if(VERBOSE) {
-			System.out.println("======================>After<======================");
-			System.out.println(jcTry);
-			System.out.println("======================>======<======================");
+	public <T extends JCTree> T translate(T tree) {
+		if (tree == null) {
+			return null;
+		} else {
+			make_at(tree.pos());
+			T result = super.translate(tree);
+			if (endPosTable != null && result != tree) {
+				endPosTable.replaceTree(tree, result);
+			}
+			return result;
 		}
 	}
-}
 
+	TreeMaker make_at(DiagnosticPosition pos) {
+		make_pos = pos;
+		return make.at(pos);
+	}
+
+	@Override
+	public void visitTry(JCTry tree) {
+		if (tree.resources.nonEmpty()) {
+			result = transformTry(tree);
+			return;
+		}
+		boolean hasBody     = tree.body.getStatements().nonEmpty();
+		boolean hasCatchers = tree.catchers.nonEmpty();
+		boolean hasFinally = tree.finalizer != null &&
+				tree.finalizer.getStatements().nonEmpty();
+
+		if (!hasCatchers && !hasFinally) {
+			result = translate(tree.body);
+			return;
+		}
+		if (!hasBody) {
+			if (hasFinally) result = translate(tree.finalizer);
+			else result = translate(tree.body);
+			return;
+		}
+		super.visitTry(tree);
+	}
+
+	private JCTree transformTry(JCTry tree) {
+		make_at(tree.pos());
+		twrVars = twrVars.dup();
+		JCBlock twrBlock = makeTwrBlock(tree.resources, tree.body, tree.finallyCanCompleteNormally, 0);
+		if (tree.catchers.isEmpty() && tree.finalizer == null)
+			result = translate(twrBlock);
+		else
+			result = translate(make.Try(twrBlock, tree.catchers, tree.finalizer));
+		twrVars = twrVars.leave();
+		return result;
+	}
+
+	private JCBlock makeTwrBlock(
+			List<JCTree> resources, JCBlock block,
+			boolean finallyCanCompleteNormally, int depth) {
+		if (resources.isEmpty())
+			return block;
+
+		// Add resource declaration or expression to block statements
+		ListBuffer<JCStatement> stats    = new ListBuffer<>();
+		JCTree                  resource = resources.head;
+		JCExpression            expr;
+		if (resource instanceof JCVariableDecl) {
+			JCVariableDecl var = (JCVariableDecl) resource;
+			if (var.sym == null) var.sym = new VarSymbol(0, var.name, var.type == null ? Type.noType : var.type,
+																		var.type == null ? symtab.noSymbol : var.type.tsym);
+			expr = make.Ident(var.sym);
+			expr.setType(resource.type);
+			stats.add(var);
+		} else {
+			Assert.check(resource instanceof JCExpression);
+			VarSymbol syntheticTwrVar =
+					new VarSymbol(SYNTHETIC | FINAL,
+									  makeSyntheticName(names.fromString("twrVar" + depth), twrVars),
+									  (resource.type.hasTag(BOT)) ?
+									  symtab.autoCloseableType : resource.type,
+									  currentMethodSym);
+			twrVars.enter(syntheticTwrVar);
+			JCVariableDecl syntheticTwrVarDecl =
+					make.VarDef(syntheticTwrVar, (JCExpression) resource);
+			expr = make.Ident(syntheticTwrVar);
+			stats.add(syntheticTwrVarDecl);
+		}
+
+		// Add primaryException declaration
+		VarSymbol primaryException =
+				new VarSymbol(SYNTHETIC,
+								  makeSyntheticName(names.fromString("primaryException" +
+																						 depth), twrVars),
+								  symtab.throwableType,
+								  currentMethodSym);
+		twrVars.enter(primaryException);
+		JCVariableDecl primaryExceptionTreeDecl = make.VarDef(primaryException, makeNull());
+		stats.add(primaryExceptionTreeDecl);
+
+		// Create catch clause that saves exception and then rethrows it
+		VarSymbol param =
+				new VarSymbol(FINAL | SYNTHETIC,
+								  names.fromString("t" +
+																 target.syntheticNameChar()),
+								  symtab.throwableType,
+								  currentMethodSym);
+		JCVariableDecl paramTree   = make.VarDef(param, null);
+		JCStatement    assign      = make.Assignment(primaryException, make.Ident(param));
+		JCStatement    rethrowStat = make.Throw(make.Ident(param));
+		JCBlock        catchBlock  = make.Block(0L, List.of(assign, rethrowStat));
+		JCCatch        catchClause = make.Catch(paramTree, catchBlock);
+
+		int oldPos = make.pos;
+		make.at(TreeInfo.endPos(block));
+		JCBlock finallyClause = makeFinClause(primaryException, expr);
+		make.at(oldPos);
+		JCTry outerTry = make.Try(makeTwrBlock(resources.tail, block,
+															finallyCanCompleteNormally, depth + 1),
+										  List.of(catchClause),
+										  finallyClause);
+		outerTry.finallyCanCompleteNormally = finallyCanCompleteNormally;
+		stats.add(outerTry);
+		return make.Block(0L, stats.toList());
+	}
+
+	private JCBlock makeFinClause(Symbol primaryException, JCExpression resource) {
+		// primaryException.addSuppressed(catchException);
+		VarSymbol catchException =
+				new VarSymbol(SYNTHETIC, make.paramName(2),
+								  symtab.throwableType,
+								  currentMethodSym);
+		JCStatement addSuppressionStatement =
+				make.Exec(makeCall(make.Ident(primaryException),
+										 names.addSuppressed,
+										 List.of(make.Ident(catchException))));
+
+		// try { resource.close(); } catch (e) { primaryException.addSuppressed(e); }
+		JCBlock        tryBlock           = make.Block(0L, List.of(generateCloseInvoke(resource)));
+		JCVariableDecl catchExceptionDecl = make.VarDef(catchException, null);
+		JCBlock        catchBlock         = make.Block(0L, List.of(addSuppressionStatement));
+		List<JCCatch>  catchClauses       = List.of(make.Catch(catchExceptionDecl, catchBlock));
+		JCTry          tryTree            = make.Try(tryBlock, catchClauses, null);
+		tryTree.finallyCanCompleteNormally = true;
+
+		// if (primaryException != null) {try...} else resourceClose;
+		JCIf closeIfStatement = make.If(makeNonNullCheck(make.Ident(primaryException)),
+												  tryTree,
+												  generateCloseInvoke(resource));
+
+		return make.Block(0L, List.of(make.If(makeNonNullCheck(resource),
+														  closeIfStatement,
+														  null)));
+	}
+
+	private JCStatement generateCloseInvoke(JCExpression resource) {
+		// convert to AutoCloseable if needed
+		if (types.asSuper(resource.type, symtab.autoCloseableType.tsym) == null) {
+			resource = (JCExpression) convert(resource, symtab.autoCloseableType);
+		}
+		// create resource.close() method invocation
+		JCExpression resourceClose = makeCall(resource, names.close, List.nil());
+		return make.Exec(resourceClose);
+	}
+
+	private JCMethodInvocation makeCall(JCExpression left, Name name, List<JCExpression> args) {
+		Assert.checkNonNull(left.type);
+		Symbol funcsym = lookupMethod(make_pos, name, left.type,
+												TreeInfo.types(args));
+		return make.App(make.Select(left, funcsym), args);
+	}
+
+	private JCTree convert(JCTree tree, Type pt) {
+		if (tree.type == pt || tree.type.hasTag(BOT))
+			return tree;
+		JCTree result = make_at(tree.pos()).TypeCast(make.Type(pt), (JCExpression) tree);
+		result.type = (tree.type.constValue() != null) ? Util.coerce(symtab, tree.type, pt)
+																	  : pt;
+		return result;
+	}
+
+	public void visitMethodDef(JCMethodDecl tree) {
+		super.visitMethodDef(tree);
+		currentMethodSym = tree.sym;
+	}
+
+	/*****************************************
+	 * Create a fresh synthetic name within a given scope - the unique name is
+	 * obtained by appending '$' chars at the end of the name until no match
+	 * is found.
+	 *
+	 * @param name base name
+	 * @param s    scope in which the name has to be unique
+	 * @return fresh synthetic name
+	 ****************************************/
+	private Name makeSyntheticName(Name name, Scope s) {
+		do {
+			name = name.append(
+					target.syntheticNameChar(),
+					names.empty);
+		} while (lookupSynthetic(name, s) != null);
+		return name;
+	}
+
+	/*****************************************
+	 * Look up a synthetic name in a given scope.
+	 *
+	 * @param s    The scope.
+	 * @param name The name.
+	 ****************************************/
+	private Symbol lookupSynthetic(Name name, Scope s) {
+		Symbol sym = s.lookup(name).sym;
+		return (sym == null || (sym.flags() & SYNTHETIC) == 0) ? null : sym;
+	}
+
+	/*****************************************
+	 * Make an attributed tree representing a literal. This will be an
+	 * Ident node in the case of boolean literals, a Literal node in all
+	 * other cases.
+	 *
+	 * @param type  The literal's type.
+	 * @param value The literal's value.
+	 ****************************************/
+	private JCExpression makeLit(Type type, Object value) {
+		return make.Literal(type.getTag(), value).setType(type.constType(value));
+	}
+
+	/*****************************************
+	 * Make an attributed tree representing null.
+	 ****************************************/
+	private JCExpression makeNull() {
+		return makeLit(symtab.botType, null);
+	}
+
+	private JCExpression makeNonNullCheck(JCExpression expression) {
+		return makeBinary(NE, expression, makeNull());
+	}
+
+	/*****************************************
+	 * Make an attributed binary expression.
+	 *
+	 * @param optag The operators tree tag.
+	 * @param lhs   The operator's left argument.
+	 * @param rhs   The operator's right argument.
+	 ****************************************/
+	private JCBinary makeBinary(JCTree.Tag optag, JCExpression lhs, JCExpression rhs) {
+		JCBinary tree = make.Binary(optag, lhs, rhs);
+		tree.operator = Util.resolveBinaryOperator(Resolve.instance(context), make_pos, optag, attrEnv, lhs.type, rhs.type);
+		tree.type = tree.operator.type.getReturnType();
+		return tree;
+	}
+
+	/*****************************************
+	 * Look up a method in a given scope.
+	 ****************************************/
+	private MethodSymbol lookupMethod(DiagnosticPosition pos, Name name, Type qual, List<Type> args) {
+		return rs.resolveInternalMethod(pos, attrEnv, qual, name, args, List.nil());
+	}
+}
