@@ -2,7 +2,6 @@ package edu.gvsu.prestongarno;
 
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.comp.*;
-import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.util.*;
 
 import static com.sun.tools.javac.tree.JCTree.*;

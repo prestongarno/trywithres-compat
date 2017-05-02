@@ -2,12 +2,8 @@ package edu.gvsu.prestongarno;
 
 import com.sun.source.util.*;
 import com.sun.tools.javac.api.BasicJavacTask;
-import com.sun.tools.javac.main.Option;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.util.Options;
-
-import static com.sun.tools.javac.main.Option.*;
-
 /*****************************************
  * Created by preston on 4/26/17.
  *
@@ -51,9 +47,9 @@ public class Loader implements Plugin {
 		public TaskListenerImpl(JavacTask javacTask)
 		{
 			task = (BasicJavacTask) javacTask;
-			Options options = Options.instance(task.getContext());
 			transformed = false;
-			PRINT = options.isSet(VERBOSE);
+			String v = Options.instance(task.getContext()).get("-g:source");
+			PRINT = v != null;
 		}
 
 		public void started(TaskEvent taskEvent) {}
@@ -66,7 +62,7 @@ public class Loader implements Plugin {
 					taskEvent.getCompilationUnit().getTypeDecls().forEach(System.out::println);
 				}
 
-				taskEvent.getCompilationUnit().getTypeDecls().forEach(o -> ttt.translateClass(((JCTree.JCClassDecl) o)));
+				taskEvent.getCompilationUnit().getTypeDecls().forEach(o -> ttt.translateClass(((JCTree) o)));
 
 				if(PRINT) {
 					System.out.println("\n============<AFTER>============");

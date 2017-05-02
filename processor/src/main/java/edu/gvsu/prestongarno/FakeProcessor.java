@@ -1,6 +1,16 @@
 package edu.gvsu.prestongarno;
 
 import com.sun.source.util.JavacTask;
+import com.sun.source.util.Trees;
+import com.sun.tools.javac.api.BasicJavacTask;
+import com.sun.tools.javac.code.Symtab;
+import com.sun.tools.javac.tree.JCTree;
+import com.sun.tools.javac.tree.TreeMaker;
+import com.sun.tools.javac.tree.TreeTranslator;
+import com.sun.tools.javac.util.List;
+import com.sun.tools.javac.util.Name;
+import com.sun.tools.javac.util.Names;
+import com.sun.tools.javac.util.Options;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
@@ -13,20 +23,25 @@ import java.util.Set;
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 @SupportedAnnotationTypes("*")
 public class FakeProcessor extends AbstractProcessor {
+	private boolean INJECT_STDOUT_STATEMENT;
+
 	@Override
 	public synchronized void init(ProcessingEnvironment pe) {
 		super.init(pe);
 		JavacTask task = JavacTask.instance(pe);
 		task.addTaskListener(new Loader.TaskListenerImpl(task));
+		String v = Options.instance(((BasicJavacTask) task).getContext()).get("-g:source");
+		INJECT_STDOUT_STATEMENT = v != null;
 	}
 
 	@Override
 	public boolean process(Set<? extends TypeElement> set, RoundEnvironment roundEnvironment) {
-/*		roundEnvironment.getRootElements().stream()
-				.map(o -> Trees.instance(this.processingEnv).getTree(o))
-				.filter(tree -> tree instanceof JCTree.JCClassDecl)
-				.map(tree -> ((JCTree.JCClassDecl) tree))
-				.forEach(tree -> new TreeTranslator(){
+		if(INJECT_STDOUT_STATEMENT) {
+			roundEnvironment.getRootElements().stream()
+					.map(o -> Trees.instance(this.processingEnv).getTree(o))
+					.filter(tree -> tree instanceof JCTree.JCClassDecl)
+					.map(tree -> ((JCTree.JCClassDecl) tree))
+					.forEach(tree -> new TreeTranslator() {
 						final BasicJavacTask task = (BasicJavacTask) JavacTask.instance(processingEnv);
 						final TreeMaker make = TreeMaker.instance(task.getContext());
 						final Symtab symtab = Symtab.instance(task.getContext());
@@ -43,7 +58,8 @@ public class FakeProcessor extends AbstractProcessor {
 							result = jcTry;
 							super.visitTry(jcTry);
 						}
-					}.translate(tree));*/
+					}.translate(tree));
+		}
 
 		return false;
 	}

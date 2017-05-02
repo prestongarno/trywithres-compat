@@ -53,6 +53,12 @@ jar {
     baseName = 'trywithresources-compat-' + version
     archiveName = baseName + '.jar'
 }
+compileJava {
+    options.compilerArgs.add("-verbose")
+}
+compileTestJava {
+    options.compilerArgs.add("-verbose")
+}
 
 sourceSets {
     main {

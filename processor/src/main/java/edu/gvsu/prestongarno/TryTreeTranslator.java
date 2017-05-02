@@ -62,8 +62,10 @@ public class TryTreeTranslator extends TreeTranslator {
 		this.envs = Util.getEnvs(context);
 	}
 
-	public void translateClass(JCClassDecl o) {
-		this.attrEnv = envs.get(o.sym);
+	public void translateClass(JCTree o) {
+		if(o instanceof JCClassDecl) {
+			this.attrEnv = envs.get(((JCClassDecl) o).sym);
+		}
 		endPosTable = attrEnv == null ? endPosTable
 												: attrEnv.toplevel.endPositions;
 		this.translate(o);

@@ -8,14 +8,29 @@ public class MultipleResources {
 
 	public Object _ASSERT_NOT_NULL = null;
 	public Object _ASSERT_NOT_NULL_2 = null;
+	public Object _ASSERT_NOT_NULL_3 = null;
+	public boolean finalBlockCompleted;
 
 	public void INVOKE_ME() throws OnCloseResourceException {
-		try (TestAcloseable something = new TestAcloseable(true, false);
-			  TestAcloseable somethingElse = new TestAcloseable(false, false)) {
+		finalBlockCompleted = false;
+		try (TestAcloseable something = new TestAcloseable();
+			  TestAcloseable somethingElse = new TestAcloseable();
+			  TestAcloseable somethingElseer = new TestAcloseable(true, false);
+			  TestAcloseable somethingElsest = new TestAcloseable(true, true)) {
 			_ASSERT_NOT_NULL = something;
 			_ASSERT_NOT_NULL_2 = somethingElse;
+			_ASSERT_NOT_NULL_3 = somethingElseer;
+
 			somethingElse.doRiskyThings();
+
 			something.doRiskyThings();
+
+			somethingElseer.doRiskyThings();
+
+			somethingElsest.doRiskyThings();
+		} finally {
+			System.out.println("Running user finally block...");
+			finalBlockCompleted = true;
 		}
 	}
 }
