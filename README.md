@@ -5,14 +5,14 @@ Try-With-Resources Compatibility: Java & Android API <19 (KitKat)
 
 
 
-## How to use with gradle:
+## ~~How to use with gradle:~~\*
 trywithresources-compat will only work with source version 1.8. This is also a *compileOnly* dependency. In your module build.gradle file add this* to your dependencies closure (or alternatively you can put this on the compile classpath in the root script)\:
 
     dependencies {
       compileOnly ':trywithresources-compat:0.1'
     }
 
-\* <sub>Currently waiting on JIRA approval to deploy an artifact to Maven Central. This means the only way to use this is to add the direct repository URL (on jcenter/Bintray) at https://dl.bintray.com/prestongarno/trywithresources-compat/ (.jar and sha1) to repositories closure. Or, `git clone` the repo, `cd` into root, and run `gradle build`</sub>
+\* <sub>Currently waiting on JIRA approval to deploy an artifact to Maven Central</sub>
      
 #### Options:
  1. **Pretty-print**: compile with the `-g:source` argument to print before/after processing
