@@ -1,7 +1,7 @@
 Try-With-Resources Compatibility: Java & Android API <19 (KitKat)
 ======
 
-##### Standalone dependency to support migrating Android apps from [retrolambda](https://github.com/orfjackal/retrolambda) to Android Studio 2.4, which now comes with support for [some Java 8 features out of the box]().  While google is rumored to be providing support for try-with-resources ['hopefully sometime soon'](https://www.reddit.com/r/androiddev/comments/65f2rb/java_8_language_features_support_update/dgaqpak/), I decided to go ahead and build a standalone tool to do this until 2.4 provides a fix.
+#### Standalone dependency to support migrating Android apps from [retrolambda](https://github.com/orfjackal/retrolambda) to Android Studio 2.4, which now comes with support for [some Java 8 features out of the box]().  While google is rumored to be providing support for try-with-resources ['hopefully sometime soon'](https://www.reddit.com/r/androiddev/comments/65f2rb/java_8_language_features_support_update/dgaqpak/), I decided to go ahead and build a standalone tool to do this until 2.4 provides a fix.
 
 
 
@@ -15,7 +15,7 @@ trywithresources-compat will only work with source version 1.8. This is also a *
 \* <sub>Currently waiting on JIRA approval to deploy an artifact to Maven Central. This means the only way to use this is to add the direct repository URL (on jcenter/Bintray) at https://dl.bintray.com/prestongarno/trywithresources-compat/ (.jar and sha1) to repositories closure. Or, `git clone` the repo, `cd` into root, and run `gradle build`</sub>
      
 #### Options:
- 1. **Pretty-print**: compile with the `-verbose` argument to print before/after processing
+ 1. **Pretty-print**: compile with the `-g:source` argument to print before/after processing
      
      
 #### Possible Issues:
