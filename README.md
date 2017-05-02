@@ -20,27 +20,22 @@ trywithresources-compat will only work with source version 1.8. This is also a *
      
 #### Possible Issues:
    * Hotswap/InstantRun on emulators running Android \<19 won't work *after adding a try-with-resource and instant run before a clean build*. A clean build will most likely be required if testing on \<API 19 and you add a try-with-resource statement. Release APK won't be affected.
+<br><br><br><br>
      
      
-===== 
-
-     
-===== 
-     
-     
-###### **How it works:**
+##### **How it works:**
 
 * trywithresources-compat leverages the Java [`ServiceLoader`](https://docs.oracle.com/javase/8/docs/api/java/util/ServiceLoader.html) to attach itself to the javac compilation process and use the (admittedly, half internal/unsupported) API com.sun.tools.javac 
 * After annotation processing, it runs a single pass over the Abstract Syntax Tree and translates any try-with-resources blocks to standard try-catch blocks
 * The code generation process uses synthetic local variables in order to avoid naming conflicts with existing symbols. The transformed block follows the [JLS canonical process](https://docs.oracle.com/javase/specs/jls/se7/html/jls-14.html#jls-14.20.3) for de-sugaring as shown below:
 
-###### Example code:
+##### Example code:
 
     try(AutoCloseableImplImpl example = new AutoCloseableImpl()) {
       example.doRiskyThings();
     } //optional catch/finally
 
-###### Result:
+##### Result:
 
     {
       final AutoCloseableImplImpl example = new AutoCloseableImpl()
