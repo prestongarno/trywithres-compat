@@ -5,7 +5,7 @@ Try-With-Resources Compatibility: Java & Android API <19 (KitKat)
 
 
 
-## How to use with gradle:\
+## How to use with gradle:
 trywithresources-compat will only work with source version 1.8. This is also a *compileOnly dependency. In your module build.gradle file add this to your module build.gradle:\*
     
     repositories {
