@@ -1,21 +1,19 @@
 Try-With-Resources Compatibility: Java & Android API <19 (KitKat)
 ======
 
-##### Standalone dependency to support migrating Android apps from [retrolambda](https://github.com/orfjackal/retrolambda) to Android Studio 2.4, which now comes with support for [some Java 8 features out of the box]().  While google is rumored to be providing support for try-with-resources ['hopefully sometime soon'](https://www.reddit.com/r/androiddev/comments/65f2rb/java_8_language_features_support_update/dgaqpak/), I decided to go ahead and build a standalone tool to do this until 2.4 provides a fix.
+#### Standalone dependency to support migrating Android apps from [retrolambda](https://github.com/orfjackal/retrolambda) to Android Studio 2.4, which now comes with support for [some Java 8 features out of the box]().  While google is rumored to be providing support for try-with-resources ['hopefully sometime soon'](https://www.reddit.com/r/androiddev/comments/65f2rb/java_8_language_features_support_update/dgaqpak/), I decided to go ahead and build a standalone tool to do this until 2.4 provides a fix.
 
 
 
-## How to use with gradle:
-trywithresources-compat will only work with source version 1.8. This is also a *compileOnly* dependency. In your module build.gradle file add this* to your dependencies closure (or alternatively you can put this on the compile classpath in the root script)\:
+## How to use with gradle:\
+trywithresources-compat will only work with source version 1.8. This is also a *compileOnly dependency. In your module build.gradle file add this to your dependencies closure (or alternatively you can put this on the compile classpath in the root script)\:
 
     dependencies {
-      compileOnly ':trywithresources-compat:0.1'
+      annotationProcessor 'com.prestongarno:trywithresources-compat:0.1'
     }
-
-\* <sub>Currently waiting on JIRA approval to deploy an artifact to Maven Central. This means the only way to use this is to add the direct repository URL (on jcenter/Bintray) at https://dl.bintray.com/prestongarno/trywithresources-compat/ (.jar and sha1) to repositories closure. Or, `git clone` the repo, `cd` into root, and run `gradle build`</sub>
      
 #### Options:
- 1. **Pretty-print**: compile with the `-verbose` argument to print before/after processing
+ 1. **Pretty-print**: compile with the `-g:source` argument to print before/after processing
      
      
 #### Possible Issues:
@@ -54,8 +52,13 @@ trywithresources-compat will only work with source version 1.8. This is also a *
               primaryException0$.addSuppressed(xI$);
              } 
              else something.close();
+<<<<<<< HEAD
          }
+=======
+          }
+>>>>>>> e320a1e04b5ba44fce5694578916c32fc4b31693
       }
     } // if applicable: catch/finally blocks are inserted here
+
     
 
