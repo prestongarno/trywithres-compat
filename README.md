@@ -6,7 +6,7 @@ Try-With-Resources Compatibility: Java & Android API <19 (KitKat)
 
 
 ## How to use with gradle:\
-trywithresources-compat will only work with source version 1.8. This is also a *compileOnly dependency. In your module build.gradle file add this to your dependencies closure:\*
+trywithresources-compat will only work with source version 1.8. This is also a *compileOnly dependency. In your module build.gradle file add this to your module build.gradle:\*
     
     repositories {
       mavenCentral()
@@ -63,6 +63,7 @@ trywithresources-compat will only work with source version 1.8. This is also a *
                  primaryException0$.addSuppressed(xI$);
                } 
              else something.close();
+          }
       }
     } // if applicable: catch/finally blocks are inserted here
 
