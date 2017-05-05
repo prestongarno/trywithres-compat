@@ -56,17 +56,13 @@ trywithresources-compat will only work with source version 1.8. This is also a *
           throw t$;
       } finally {
           if (something != null) {
-             if (primaryException0$ != null) try { 
-               something.close();
-             } catch (synthetic final Throwable xI$) {
-              primaryException0$.addSuppressed(xI$);
-             } 
+             if (primaryException0$ != null) 
+               try { 
+                 something.close();
+               } catch (synthetic final Throwable xI$) {
+                 primaryException0$.addSuppressed(xI$);
+               } 
              else something.close();
-<<<<<<< HEAD
-         }
-=======
-          }
->>>>>>> e320a1e04b5ba44fce5694578916c32fc4b31693
       }
     } // if applicable: catch/finally blocks are inserted here
 
