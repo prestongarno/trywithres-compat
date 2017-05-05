@@ -1,26 +1,22 @@
-
 buildscript {
     repositories {
-        mavenCentral()
-        jcenter()
+        flatDir dirs: System.getenv("JAVA_HOME") + "/lib/"
     }
-
     dependencies {
-        classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7"
+        classpath (":tools")
     }
 }
 
 plugins {
     id "idea"
     id "java"
-    id "com.jfrog.bintray" version "1.7.3"
 }
 
-group 'trywithresources-compat'
+repositories {
+    mavenCentral()
+}
+
+group 'trywithres-compat'
 version '0.1-SNAPSHOT'
 
 sourceCompatibility = 1.8
-
-dependencies {
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-}

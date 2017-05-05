@@ -1,3 +1,2 @@
-rootProject.name = 'trywithresources-compat'
-include 'processor'
-
+rootProject.name = 'TWR-PORT'
+include 'trywithres-compat'

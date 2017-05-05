@@ -1,0 +1,148 @@
+def jdkHome = System.getenv("JAVA_HOME")
+
+apply plugin: 'idea'
+apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'signing'
+apply plugin: 'maven-publish'
+
+repositories {
+    maven {
+        url "https://repo1.maven.org/maven2"
+    }
+}
+
+buildscript {
+    repositories {
+        flatDir dirs: System.getenv("JAVA_HOME") + "/lib/"
+    }
+    dependencies {
+        classpath(":tools")
+    }
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    compile files("$jdkHome/lib/tools.jar")
+    testCompileClasspath files("$jdkHome/lib/tools.jar")
+    testCompile 'com.google.testing.compile:compile-testing:0.10'
+}
+
+task buildReleaseDoc(type: Javadoc) {
+    source = sourceSets.main.allJava
+    destinationDir = file('../release/javadoc/')
+    title = "trywithres-compat-javadoc-" + version
+}
+
+task buildArtifact(type: Jar) {
+    from('build/classes/main/')
+    from('build/resources/main')
+    destinationDir = file('../release/artifacts/')
+    baseName = 'trywithres-compat'
+    archiveName = baseName + '.jar'
+}
+
+task buildArtifactDoc(type: Jar) {
+    dependsOn buildReleaseDoc
+    from('../release/javadoc')
+    destinationDir = file('../release/artifacts/')
+    classifier 'javadoc'
+    baseName = 'trywithres-compat-javadoc'
+    archiveName = baseName + '.jar'
+}
+
+task buildArtifactSource(type: Jar) {
+    from(sourceSets.main.allSource)
+    from(sourceSets.test.allSource)
+    destinationDir = file('../release/artifacts/')
+    classifier 'sources'
+    baseName = 'trywithres-compat-source'
+    archiveName = baseName + '.jar'
+}
+
+sourceSets {
+    main {
+        java { srcDirs = ['./src/main/java'] }
+        resources { srcDirs = ['./src/main/resources'] }
+    }
+    test {
+        java {
+            srcDirs = ['./src/test/java']
+        }
+        resources {
+            srcDirs = ['./src/test/resources']
+        }
+    }
+}
+////====================================================================//
+///===========================<DEPLOYING>==============================//
+//====================================================================//
+
+artifacts {
+    buildArtifactSource
+    buildArtifact
+    buildArtifactDoc
+}
+
+publishing {
+    publications {
+        buildMain(MavenPublication) {
+            artifact buildArtifact
+            artifact buildArtifactSource
+            artifact buildArtifactDoc
+            pom.withXml {
+                asNode().children().last() + {
+                    resolveStrategy = Closure.DELEGATE_FIRST
+                    name 'trywithres-compat'
+                    description 'A tool for backwards-compatible try-with-resources'
+                    url 'https://github.com/prestongarno/trywithres-compat/'
+                    organization {
+                        name 'prestongarno.com'
+                        url 'http://prestongarno.com'
+                    }
+                    issueManagement {
+                        system 'git'
+                        url 'https://github.com/prestongarno/trywithres-compat/issues'
+                    }
+                    scm {
+                        url POM_SCM_URL
+                        connection POM_SCM_CONNECTION
+                        developerConnection POM_SCM_DEV_CONNECTION
+                    }
+                    licenses {
+                        license {
+                            name POM_LICENCE_NAME
+                            url POM_LICENCE_URL
+                            comments 'See discussion at ' + POM_LICENCE_URL + ' for more details.'
+                            distribution POM_LICENCE_DIST
+                        }
+                    }
+                    developers {
+                        developer {
+                            id POM_DEVELOPER_ID
+                            name POM_DEVELOPER_NAME
+                            organization 'prestongarno.com'
+                            organizationUrl 'http://prestongarno.com'
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+group 'com.prestongarno'
+version '0.1'
+
+publishing {
+    repositories {
+        maven {
+            url "https://oss.sonatype.org/service/local/staging/deploy/maven2" // deploy
+            //url "https://oss.sonatype.org/content/repositories/snapshots" // SNAPSHOT
+            credentials {
+                username 'prestongarno'
+                password '***REDACTED***'//System.getProperty("DEPLOY_PASSWORD")
+            }
+        }
+    }
+}
