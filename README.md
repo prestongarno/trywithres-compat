@@ -37,7 +37,7 @@ trywithresources-compat will only work with source version 1.8. This is also a *
 
 * trywithresources-compat leverages the Java [`ServiceLoader`](https://docs.oracle.com/javase/8/docs/api/java/util/ServiceLoader.html) to attach itself to the javac compilation process and use the (admittedly, half internal/unsupported) API com.sun.tools.javac 
 * After annotation processing, it runs a single pass over the Abstract Syntax Tree and translates any try-with-resources blocks to standard try-catch blocks
-* The code generation process uses synthetic local variables in order to avoid naming conflicts with existing symbols. The transformed block follows the [JLS canonical process](https://docs.oracle.com/javase/specs/jls/se7/html/jls-14.html#jls-14.20.3) for de-sugaring as shown below:
+* The code generation process uses synthetic local variables in order to avoid naming conflicts with existing symbols. The transformed block follows the [JLS canonical process](https://docs.oracle.com/javase/specs/jls/se7/html/jls-14.html#jls-14.20.3) (minus the call to `Throwable#addSuppressed`) for de-sugaring as shown below:
 
 ##### Example code:
 
@@ -61,9 +61,7 @@ trywithresources-compat will only work with source version 1.8. This is also a *
              if (primaryException0$ != null) 
                try { 
                  something.close();
-               } catch (synthetic final Throwable xI$) {
-                 primaryException0$.addSuppressed(xI$);
-               } 
+               } catch (synthetic final Throwable xI$) { } 
              else something.close();
           }
       }
