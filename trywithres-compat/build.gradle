@@ -137,11 +137,14 @@ version '0.1'
 publishing {
     repositories {
         maven {
-            url "https://oss.sonatype.org/service/local/staging/deploy/maven2" // deploy
-            //url "https://oss.sonatype.org/content/repositories/snapshots" // SNAPSHOT
+            if(version.endsWith('-SNAPSHOT') {
+               url "https://oss.sonatype.org/content/repositories/snapshots" // SNAPSHOT
+            } else {
+               url "https://oss.sonatype.org/service/local/staging/deploy/maven2" // deploy
+            }
             credentials {
                 username 'prestongarno'
-                password 'Sketchup1'//System.getProperty("DEPLOY_PASSWORD")
+                password System.getProperty("DEPLOY_PASSWORD")
             }
         }
     }
