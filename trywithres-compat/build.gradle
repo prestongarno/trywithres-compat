@@ -141,7 +141,7 @@ publishing {
             //url "https://oss.sonatype.org/content/repositories/snapshots" // SNAPSHOT
             credentials {
                 username 'prestongarno'
-                password '***REDACTED***'//System.getProperty("DEPLOY_PASSWORD")
+                password 'Sketchup1'//System.getProperty("DEPLOY_PASSWORD")
             }
         }
     }

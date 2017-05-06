@@ -1,5 +1,6 @@
 package com.prestongarno;
 
+import com.sun.source.tree.CompilationUnitTree;
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.comp.AttrContext;
@@ -68,14 +69,12 @@ class TryTreeTranslator extends TreeTranslator {
 		this.envs = Util.getEnvs(context);
 	}
 
-	public void translateClass(JCTree o) {
-		if (o instanceof JCClassDecl) {
-			this.attrEnv = envs.get(((JCClassDecl) o).sym);
-		}
+	public void translateClass(JCClassDecl o) {
+		this.attrEnv = envs.get(o.sym);
 		endPosTable = attrEnv == null ? endPosTable
 												: attrEnv.toplevel.endPositions;
 		try {
-			this.translate(o);
+			translate(o);
 		} catch (Throwable t) {
 			JavacProcessingEnvironment.instance(context).getMessager()
 					.printMessage(Diagnostic.Kind.ERROR,
@@ -96,6 +95,7 @@ class TryTreeTranslator extends TreeTranslator {
 		} else {
 			make_at(tree.pos());
 			T result = super.translate(tree);
+			this.result = result;
 			if (endPosTable != null && result != tree) {
 				endPosTable.replaceTree(tree, result);
 			}
@@ -189,8 +189,7 @@ class TryTreeTranslator extends TreeTranslator {
 		// Create catch clause that saves exception and then rethrows it
 		VarSymbol param =
 				new VarSymbol(FINAL | SYNTHETIC,
-								  names.fromString("t" +
-																 target.syntheticNameChar()),
+								  names.fromString("t" + target.syntheticNameChar()),
 								  symtab.throwableType,
 								  currentMethodSym);
 		JCVariableDecl paramTree   = make.VarDef(param, null);
@@ -218,17 +217,13 @@ class TryTreeTranslator extends TreeTranslator {
 				new VarSymbol(SYNTHETIC, make.paramName(2),
 								  symtab.throwableType,
 								  currentMethodSym);
-		JCStatement addSuppressionStatement =
-				make.Exec(makeCall(make.Ident(primaryException),
-										 names.addSuppressed,
-										 List.of(make.Ident(catchException))));
-
+		//JCStatement addSuppressionStatement = make.Exec(makeCall(make.Ident(primaryException), names.addSuppressed, List.of(make.Ident(catchException))));
 		// try { resource.close(); } catch (e) { primaryException.addSuppressed(e); }
 		JCBlock        tryBlock           = make.Block(0L, List.of(generateCloseInvoke(resource)));
 		JCVariableDecl catchExceptionDecl = make.VarDef(catchException, null);
-		JCBlock        catchBlock         = make.Block(0L, List.of(addSuppressionStatement));
-		List<JCCatch>  catchClauses       = List.of(make.Catch(catchExceptionDecl, catchBlock));
-		JCTry          tryTree            = make.Try(tryBlock, catchClauses, null);
+		//JCBlock        catchBlock         = make.Block(0L, List.of(addSuppressionStatement));
+		List<JCCatch> catchClauses = List.of(make.Catch(catchExceptionDecl, make.Block(0L, List.nil())));
+		JCTry         tryTree      = make.Try(tryBlock, catchClauses, null);
 		tryTree.finallyCanCompleteNormally = true;
 
 		// if (primaryException != null) {try...} else resourceClose;
@@ -262,8 +257,7 @@ class TryTreeTranslator extends TreeTranslator {
 		if (tree.type == pt || tree.type.hasTag(BOT))
 			return tree;
 		JCTree result = make_at(tree.pos()).TypeCast(make.Type(pt), (JCExpression) tree);
-		result.type = (tree.type.constValue() != null) ? Util.coerce(symtab, tree.type, pt)
-																	  : pt;
+		result.type = (tree.type.constValue() != null) ? Util.coerce(symtab, tree.type, pt) : pt;
 		return result;
 	}
 

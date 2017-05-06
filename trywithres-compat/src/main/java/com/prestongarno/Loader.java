@@ -60,7 +60,7 @@ public class Loader implements Plugin {
 				   taskEvent.getCompilationUnit().getTypeDecls().forEach(System.out::println);
 				}
 
-				taskEvent.getCompilationUnit().getTypeDecls().forEach(o -> ttt.translateClass(((JCTree) o)));
+				taskEvent.getCompilationUnit().getTypeDecls().forEach(o -> ttt.translateClass((JCTree.JCClassDecl) o));
 
 				if(PRINT) {
 					System.out.println("\n============<AFTER>============");
