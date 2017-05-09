@@ -4,7 +4,7 @@ Try-With-Resources Compatibility: Java & Android API <19 (KitKat)
 [![GPL License](https://badges.frapsoft.com/os/gpl/gpl.svg?v=103)](https://opensource.org/licenses/GPL-3.0/)   [![GitHub version](https://badge.fury.io/gh/boennemann%2Fbadges.svg)](https://repo1.maven.org/maven2/com/prestongarno/trywithres-compat/)
 
 #### Standalone dependency to support migrating Android apps from [retrolambda](https://github.com/orfjackal/retrolambda) to Android Studio 2.4, which now comes with support for [some Java 8 features out of the box]().  While Google is rumored to be providing support for try-with-resources ['hopefully sometime soon'](https://www.reddit.com/r/androiddev/comments/65f2rb/java_8_language_features_support_update/dgaqpak/), I decided make a standalone tool to do this until Google provides a fix for Android Studio 2.4.
-
+<br>
 <sup>Quick note about the GPL license - with this being a compilation only dependency with no runtime library/linkage, the same classpath exception applies here that covers javac: unless you extend this library, you are free to use this as you wish, covered under whatever license you want :)</sup>
 
 
